@@ -30,11 +30,13 @@ int release_x, release_y;
 float x_angle = 0.0; 
 float y_angle = 0.0; 
 float scale_size = 1; 
+//Matrices
 glm::mat4 modelM = glm::mat4(); 
 glm::mat4 transform[3] = {glm::mat4(),glm::mat4(),glm::mat4()};
 glm::mat4 nothing = glm::mat4();
 std::stack<glm::mat4> stacks; 
 int xform_mode = 0; 
+//colors
 float c1[4]={0.7,0,0,1};
 float c2[4]={0,0.7,0,1};
 float c3[4]={0,0,0.7,1};
@@ -49,6 +51,8 @@ float brown[4] = {0.5,0.25,0.1};
 #define XFORM_ROTATE  1
 #define XFORM_SCALE 2 
 #define PI 3.14159265
+#define KRED  "\x1B[31m"
+#define RESET "\033[0m"
 
 void InitGeometry()
 {
@@ -87,6 +91,7 @@ void InitVBO()
  // copy at drawing time
 } 
 
+//Implement translate
 glm::mat4 Mtranslate (float x, float y, float z){
   glm::mat4 output = glm::mat4(); 
   output[3][0]=x;
@@ -94,7 +99,7 @@ glm::mat4 Mtranslate (float x, float y, float z){
   output[3][2]=z;
   return output;
 }
-
+//Implement scaling
 glm::mat4 Mscale(float x, float y, float z){
   glm::mat4 output = glm::mat4(); 
   output[0][0]=x;
@@ -102,7 +107,7 @@ glm::mat4 Mscale(float x, float y, float z){
   output[2][2]=z;
   return output;
 }
-
+//inplement rotation
 glm::mat4 Mrotate(float angle, bool x, bool y, bool z){
   glm::mat4 output = glm::mat4();
   if(x){
@@ -126,7 +131,7 @@ glm::mat4 Mrotate(float angle, bool x, bool y, bool z){
     return output;
   }
 }
-
+//basic draw square
 void draw_square(float color[3]){
 
   glColor3f(color[0],color[1],color[2]); 
@@ -134,7 +139,7 @@ void draw_square(float color[3]){
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (char*) NULL+0);
   
 }
-
+//not used, for debugging
 void draw_square2(glm::mat4 m,float color[3]){
 
   //glLoadMatrixf(&m[0][0]); 
@@ -143,7 +148,7 @@ void draw_square2(glm::mat4 m,float color[3]){
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (char*) NULL+0);
   
 }
-
+//not used, for debugging
 void draw_square3(float color[3]){
 
   glColor3f(color[0],color[1],color[2]); 
@@ -151,18 +156,7 @@ void draw_square3(float color[3]){
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, (char*) NULL+0);
   
 }
-
-void draw_circle (float r,float color[3]){
-  glPushMatrix();
-  glScalef(r*1.414,r*1.414,0);
-  for (int i = 0; i < 360; ++i)
-  {
-    draw_square(color);
-    glRotatef(1,0,0,1);
-  }
-  glPopMatrix();
-}
-
+//draw triangle by given points A,B,and C
 void draw_triangle(float A1,float A2,float A3,float B1,float B2,float B3,float C1,float C2, float C3){
   glPushMatrix();
   verts[0].LL[0] = A1; verts[0].LL[1] = A2; verts[0].LL[2] = A3; verts[0].LL[3] = 1;
@@ -174,7 +168,32 @@ void draw_triangle(float A1,float A2,float A3,float B1,float B2,float B3,float C
   glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex)*6, verts, GL_STATIC_DRAW);
   glPopMatrix();
 }
-
+//draw circle implementation (this draws circle but not as good as draw_circle2)
+void draw_circle (float r,float color[3]){
+  glPushMatrix();
+  glScalef(r*1.414,r*1.414,0);
+  for (int i = 0; i < 360; ++i)
+  {
+    draw_square(color);
+    glRotatef(1,0,0,1);
+  }
+  glPopMatrix();
+}
+//draw circle implementation (This is the correct way of drawing circles, but fps is too low)
+void draw_circle2 (float r,float color[3]){
+  glPushMatrix();
+  int cut =24;
+  glColor3f(color[0],color[1],color[2]); 
+  //glScalef(r*1.414,r*1.414,0);
+  for (int i = 0; i < cut; ++i)
+  {
+    draw_triangle(r*cos(i*2*PI/cut),r*sin(i*2*PI/cut),0,
+                  r*cos((i+1)*2*PI/cut),r*sin((i+1)*2*PI/cut),0,
+                  0,0,0);
+  }
+  glPopMatrix();
+}
+//draw cylinder based on two circles and multiple triangles
 void draw_cylinder (float baser, float topr, float h, int slices, float color[3],bool center,glm::mat4 M ) 
 {
   glPushMatrix();
@@ -203,7 +222,7 @@ void draw_cylinder (float baser, float topr, float h, int slices, float color[3]
 
   glPopMatrix();
 }
-
+//draw sphere based on cylinders
 void draw_sphere(float r, int slices, int stacks, float color[3],glm::mat4 M){
   glPushMatrix();
   //glMultMatrixf(&M[0][0]);
@@ -228,7 +247,7 @@ void draw_sphere(float r, int slices, int stacks, float color[3],glm::mat4 M){
   }
   glPopMatrix();
 }
-
+//draw cube based on squares
 void draw_cube(float size, float color[3],glm::mat4 M){
   //glLoadMatrixf
   glPushMatrix();
@@ -257,7 +276,7 @@ void draw_cube(float size, float color[3],glm::mat4 M){
 
   glPopMatrix();
 }
-
+//draw tree based on cylinders
 void draw_tree(glm::mat4 M){
   draw_cylinder(0.3,0.3,2,12,brown,false,M);
   M *= Mtranslate(0,0,2);
@@ -267,7 +286,7 @@ void draw_tree(glm::mat4 M){
   M *= Mtranslate(0,0,2);
   draw_cylinder(2,0,2,12,c2,false,M);
 }
-
+//draw floor
 void draw_floor(){
   glPushMatrix();
   stacks.push(nothing);
@@ -306,6 +325,7 @@ float angle_whole=0,
       angle_rarm=0,
       angle_rhand=0;
 float ii =0;
+//draw the main object
 void draw_man(){
 
   stacks.push(modelM);
@@ -340,7 +360,7 @@ void draw_man(){
   modelM=stacks.top();
 
   modelM = modelM * Mtranslate(0,0,2);
-  draw_cylinder(2,1,4,12,c2,false,modelM);//Body
+  draw_cylinder(2,1,4,12,c6,false,modelM);//Body
 
   modelM = modelM * Mtranslate(-2,0,1);
   modelM = modelM*Mrotate(90,0,1,0);
@@ -560,11 +580,11 @@ int main(int argc, char** argv) {
   glutMouseFunc(mymouse); 
   glutMotionFunc(mymotion);
   glutKeyboardFunc(mykey); 
+  printf("%s\n","please see readme.txt for control detail");
   #ifdef __APPLE__
   #else
     glewInit(); 
   #endif
   InitVBO(); 
   glutMainLoop();
-
 }
