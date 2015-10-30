@@ -42,6 +42,7 @@ float c4[4]={0.8,1,0,1};
 float c5[4]={1,0,0.8,1};
 float c6[4]={0,0.8,1,1};
 float c7[4]={0.4,0.4,1,1};
+float brown[4] = {0.5,0.25,0.1};
 
 
 #define XFORM_NONE    0 
@@ -257,11 +258,43 @@ void draw_cube(float size, float color[3],glm::mat4 M){
   glPopMatrix();
 }
 
+void draw_tree(glm::mat4 M){
+  draw_cylinder(0.3,0.3,2,12,brown,false,M);
+  M *= Mtranslate(0,0,2);
+  draw_cylinder(2,1,2,12,c2,false,M);
+  M *= Mtranslate(0,0,2);
+  draw_cylinder(2,1,2,12,c2,false,M);
+  M *= Mtranslate(0,0,2);
+  draw_cylinder(2,0,2,12,c2,false,M);
+}
+
 void draw_floor(){
   glPushMatrix();
-  glTranslatef(0,0,-4);
-  glScalef(20,20,0.2);
+  stacks.push(nothing);
+
+  nothing = nothing * Mtranslate(0,0,-4);
+  nothing = nothing * Mscale(20,20,0.2);
   draw_cube(1,c7,nothing);
+
+  //tree1
+  nothing = stacks.top();
+  nothing *=Mtranslate(5,5,-3);
+  draw_tree(nothing);
+
+  //tree2
+  nothing = stacks.top();
+  nothing *=Mtranslate(-5,5,-3);
+  nothing *=Mscale(0.8,0.8,0.8);
+  draw_tree(nothing);
+
+  //tree3
+  nothing = stacks.top();
+  nothing *=Mtranslate(0,5,-3);
+  nothing *=Mscale(0.4,0.4,0.4);
+  draw_tree(nothing);
+
+  nothing = stacks.top();
+  stacks.pop();
   glPopMatrix();
 }
 
@@ -272,12 +305,20 @@ float angle_whole=0,
       angle_lhand=0,
       angle_rarm=0,
       angle_rhand=0;
-
+float ii =0;
 void draw_man(){
 
   stacks.push(modelM);
 
-  modelM = modelM*Mrotate(angle_whole,0,0,1);
+
+  // modelM *= Mtranslate(0,-ii,0);
+  modelM *= Mrotate(angle_whole,0,0,1);
+  // modelM *= Mtranslate(0,ii,0);
+
+  //modelM *= Mtranslate(0,-ii,0);
+  //modelM = modelM*Mrotate(angle_whole,0,0,1);
+  //modelM *= Mtranslate(0,ii,0);
+  //ii=0;
   stacks.push(modelM);
 
 
@@ -453,19 +494,24 @@ void mykey(unsigned char key, int x, int y)
       exit(1);
       break;
     case 'f': 
-      modelM = modelM * Mtranslate(1,0,0);
+      // modelM = modelM*Mrotate(angle_whole,0,0,1);
+      // modelM = stacks.top();
+       modelM = modelM * Mtranslate(0,-0.5,0);
+      // ii+=1;
       display();
       break; 
     case 'b': 
-      modelM = modelM * Mtranslate(-1,0,0);
+      modelM = modelM * Mtranslate(0,0.5,0);
       display();
       break; 
-    case 't': 
-      angle_whole+=15;
+    case 't':
+      modelM *= Mrotate(15,0,0,1); 
+      //angle_whole+=15;
       display();
       break;  
     case 'T': 
-      angle_whole-=15;
+      modelM *= Mrotate(-15,0,0,1); 
+      //angle_whole-=15;
       display();
       break;      
     case 'y': 
@@ -509,7 +555,7 @@ int main(int argc, char** argv) {
   glutInit(&argc, argv);
   glutInitDisplayMode(GLUT_RGB|GLUT_DOUBLE|GLUT_DEPTH);
   glutInitWindowSize(500,500);
-  glutCreateWindow("Lab2");
+  glutCreateWindow("Lab3 Kevin Yen");
   glutDisplayFunc(display);
   glutMouseFunc(mymouse); 
   glutMotionFunc(mymotion);
