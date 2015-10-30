@@ -32,7 +32,7 @@ float y_angle = 0.0;
 float scale_size = 1; 
 glm::mat4 modelM = glm::mat4(); 
 glm::mat4 transform[3] = {glm::mat4(),glm::mat4(),glm::mat4()};
-glm::mat4 nothing[3] = {glm::mat4(),glm::mat4(),glm::mat4()};
+glm::mat4 nothing = glm::mat4();
 std::stack<glm::mat4> stacks; 
 int xform_mode = 0; 
 float c1[4]={0.7,0,0,1};
@@ -43,7 +43,6 @@ float c5[4]={1,0,0.8,1};
 float c6[4]={0,0.8,1,1};
 float c7[4]={0.4,0.4,1,1};
 
-float angle1=0;
 
 #define XFORM_NONE    0 
 #define XFORM_ROTATE  1
@@ -175,10 +174,10 @@ void draw_triangle(float A1,float A2,float A3,float B1,float B2,float B3,float C
   glPopMatrix();
 }
 
-void draw_cylinder (float baser, float topr, float h, int slices, float color[3],bool center,glm::mat4 M[3] ) 
+void draw_cylinder (float baser, float topr, float h, int slices, float color[3],bool center,glm::mat4 M ) 
 {
   glPushMatrix();
-  glMultMatrixf(&M[0][0][0]);
+  glMultMatrixf(&M[0][0]);
   if(center) glTranslatef(0,0,h/2);
 
   glTranslatef(0,0,h/2);
@@ -204,32 +203,35 @@ void draw_cylinder (float baser, float topr, float h, int slices, float color[3]
   glPopMatrix();
 }
 
-void draw_sphere(float r, int slices, int stacks, float color[3],glm::mat4 M[3]){
+void draw_sphere(float r, int slices, int stacks, float color[3],glm::mat4 M){
   glPushMatrix();
-  // glPushMatrix();
-  glMultMatrixf(&M[0][0][0]);
+  //glMultMatrixf(&M[0][0]);
+  glm::mat4 buf = M;
   for (int i = 0; i < stacks/2; ++i)
   {
     // std::cout<<r*sin((i+1)*(PI)/stacks)<<std::endl;
-    draw_cylinder(r*cos(i*(PI)/stacks),r*cos((i+1)*(PI)/stacks),r*sin((i+1)*(PI)/stacks)-r*sin((i)*(PI)/stacks),slices,color,true,nothing);
-    glTranslatef(0,0,r*sin((i+1)*(PI)/stacks)-r*sin((i)*(PI)/stacks));
+    draw_cylinder(r*cos(i*(PI)/stacks),r*cos((i+1)*(PI)/stacks),
+      r*sin((i+1)*(PI)/stacks)-r*sin((i)*(PI)/stacks),slices,color,true,buf);
+    //glTranslatef(0,0,r*sin((i+1)*(PI)/stacks)-r*sin((i)*(PI)/stacks));
+    buf = buf * Mtranslate(0,0,r*sin((i+1)*(PI)/stacks)-r*sin((i)*(PI)/stacks));
   }
-  glPopMatrix();
-  glMultMatrixf(&M[0][0][0]);
-  glRotatef(180,1,0,0);
+  // glRotatef(180,1,0,0);
+  buf = M * Mrotate(180,1,0,0);
   for (int i = 0; i < stacks/2; ++i)
   {
     // std::cout<<r*sin((i+1)*(PI)/stacks)<<std::endl;
-    draw_cylinder(r*cos(i*(PI)/stacks),r*cos((i+1)*(PI)/stacks),r*sin((i+1)*(PI)/stacks)-r*sin((i)*(PI)/stacks),slices,color,true,nothing);
-    glTranslatef(0,0,r*sin((i+1)*(PI)/stacks)-r*sin((i)*(PI)/stacks));
+    draw_cylinder(r*cos(i*(PI)/stacks),r*cos((i+1)*(PI)/stacks),
+      r*sin((i+1)*(PI)/stacks)-r*sin((i)*(PI)/stacks),slices,color,true,buf);
+    // glTranslatef(0,0,r*sin((i+1)*(PI)/stacks)-r*sin((i)*(PI)/stacks));
+    buf = buf * Mtranslate(0,0,r*sin((i+1)*(PI)/stacks)-r*sin((i)*(PI)/stacks));
   }
   glPopMatrix();
 }
 
-void draw_cube(float size, float color[3]){
+void draw_cube(float size, float color[3],glm::mat4 M){
   //glLoadMatrixf
   glPushMatrix();
-  //glMultMatrixf(&modelM[0][0]);
+  glMultMatrixf(&M[0][0]);
   glPushMatrix();
   glPushMatrix();
 
@@ -257,46 +259,105 @@ void draw_cube(float size, float color[3]){
 
 void draw_floor(){
   glPushMatrix();
-  glTranslatef(0,0,-3);
-  glScalef(10,10,1);
-  draw_cube(1,c7);
+  glTranslatef(0,0,-4);
+  glScalef(20,20,0.2);
+  draw_cube(1,c7,nothing);
   glPopMatrix();
 }
 
+float angle_whole=0,
+      angle_head=0,
+      angle_nose=0,
+      angle_larm=0,
+      angle_lhand=0,
+      angle_rarm=0,
+      angle_rhand=0;
+
 void draw_man(){
-  glPushMatrix();
-    glTranslatef(0,0,4);
-    stacks.push(transform[0]);
-    draw_sphere(1.5,12,12,c1,transform);//head
-    glPushMatrix();
-      glRotatef(90,1,0,0);
-      glTranslatef(0,4,1.5);
-      glRotatef(angle1,0,1,0);
-      draw_cylinder(0.2,0.1,1,12,c4,true,transform);//nose
-      transform[0] = stacks.top();
-      stacks.pop();
-    glPopMatrix();
-    glTranslatef(0,0,1);
-    draw_cylinder(2,1,4,12,c2,false,transform);//body
-    glTranslatef(1,0,-3);
-    draw_cylinder(0.2,0.5,2,12,c3,false,transform);//left foot
-    glTranslatef(-2,0,0);
-    draw_cylinder(0.2,0.5,2,12,c3,false,transform);//right foot
-    glTranslatef(-0.5,0,4);
-    glPushMatrix();
-      glRotatef(-90,0,1,0);
-      draw_cylinder(0.5,0.2,1,12,c5,false,transform);//left arm
-      glTranslatef(0,0,1);
-      draw_cylinder(0.2,0.2,1,12,c6,false,transform);//left hand
-    glPopMatrix();
-    glTranslatef(3,0,0);
-    glPushMatrix();
-      glRotatef(90,0,1,0);
-      draw_cylinder(0.5,0.2,1,12,c5,false,transform);//right arm
-      glTranslatef(0,0,1);
-      draw_cylinder(0.2,0.2,1,12,c6,false,transform);//right hand
-    glPopMatrix();
-  glPopMatrix();
+
+  stacks.push(modelM);
+
+  modelM = modelM*Mrotate(angle_whole,0,0,1);
+  stacks.push(modelM);
+
+
+  //Head and nose
+  modelM = modelM*Mrotate(angle_head,0,0,1);
+  modelM = modelM*Mtranslate(0,0,5);
+  draw_sphere(1.5,12,12,c1,modelM);//head
+  modelM = modelM*Mtranslate(0,-2,0);
+
+  modelM = modelM*Mtranslate(0,1,0);
+  modelM = modelM*Mrotate(angle_nose,0,0,1);
+  modelM = modelM*Mtranslate(0,-1,0);
+  modelM = modelM*Mrotate(90,1,0,0);
+  draw_cylinder(0.2,0.1,1,12,c4,false,modelM);//nose
+  //draw_cube(1,c2,modelM);
+  
+
+  //Left arm and body
+  modelM=stacks.top();
+
+  modelM = modelM * Mtranslate(0,0,2);
+  draw_cylinder(2,1,4,12,c2,false,modelM);//Body
+
+  modelM = modelM * Mtranslate(-2,0,1);
+  modelM = modelM*Mrotate(90,0,1,0);
+
+  modelM = modelM*Mtranslate(0,0,1);
+  modelM = modelM*Mrotate(angle_larm,0,1,0);
+  modelM = modelM*Mtranslate(0,0,-1);
+
+  draw_cylinder(0.5,0.8,2,12,c3,false,modelM);//L Arm
+
+  modelM = modelM * Mtranslate(0,0,-1);
+  draw_sphere(0.5,12,12,c1,modelM); // L connector
+
+  // modelM = modelM*Mtranslate(0,0,1);
+  modelM = modelM*Mrotate(angle_lhand,0,1,0);
+  // modelM = modelM*Mtranslate(0,0,-1);
+
+  modelM = modelM * Mtranslate(0,0,-1);
+  draw_cylinder(0.1,0.5,2,12,c5,false,modelM);
+
+  //Right arm
+  modelM=stacks.top();
+
+  modelM = modelM*Mtranslate(2,0,3);
+  modelM = modelM*Mrotate(-90,0,1,0);
+
+  modelM = modelM*Mtranslate(0,0,1);
+  modelM = modelM*Mrotate(angle_rarm,0,1,0);
+  modelM = modelM*Mtranslate(0,0,-1);
+
+  draw_cylinder(0.5,0.8,2,12,c3,false,modelM);//R Arm
+
+  modelM = modelM * Mtranslate(0,0,-1);
+  draw_sphere(0.5,12,12,c1,modelM); // R connector
+
+  // modelM = modelM*Mtranslate(0,0,1);
+  modelM = modelM*Mrotate(angle_rhand,0,1,0);
+  // modelM = modelM*Mtranslate(0,0,-1);
+
+  modelM = modelM * Mtranslate(0,0,-1);
+  draw_cylinder(0.1,0.5,2,12,c5,false,modelM);
+
+  //legs
+  modelM=stacks.top();
+  modelM = modelM*Mtranslate(1,0,-2);
+  modelM = modelM*Mscale(0.7,0.7,4);
+  draw_cube(1,c3,modelM);
+
+  modelM=stacks.top();
+  modelM = modelM*Mtranslate(-1,0,-2);
+  modelM = modelM*Mscale(0.7,0.7,4);
+  draw_cube(1,c3,modelM);
+
+
+
+  stacks.pop();
+  modelM=stacks.top();
+  stacks.pop();
 }
 
 void display()
@@ -391,20 +452,52 @@ void mykey(unsigned char key, int x, int y)
     case 'q': 
       exit(1);
       break;
-    case 'w': 
-      //modelM = modelM * Mtranslate(1,0,0);
-        transform[0] = transform[0] * Mrotate(15,1,0,0);
-       // modelM = modelM * Mrotate(15,0,1,0);
-       // modelM = modelM * Mrotate(15,0,0,1);
-      // modelM = modelM * Mscale(1.1,1,1);
+    case 'f': 
+      modelM = modelM * Mtranslate(1,0,0);
       display();
       break; 
-    case '1': 
-      angle1+=1; 
+    case 'b': 
+      modelM = modelM * Mtranslate(-1,0,0);
       display();
       break; 
-    case '2': 
-      angle1-=1; 
+    case 't': 
+      angle_whole+=15;
+      display();
+      break;  
+    case 'T': 
+      angle_whole-=15;
+      display();
+      break;      
+    case 'y': 
+      angle_nose+=15;
+      display();
+      break;     
+    case 'Y': 
+      angle_nose-=15;
+      display();
+      break; 
+    case 'l': 
+      angle_larm+=15;
+      display();
+      break;     
+    case 'L': 
+      angle_lhand-=15;
+      display();
+      break;  
+    case 'r': 
+      angle_rarm+=15;
+      display();
+      break;     
+    case 'R': 
+      angle_rhand-=15;
+      display();
+      break; 
+    case 'h': 
+      angle_head+=15;
+      display();
+      break;     
+    case 'H': 
+      angle_head-=15;
       display();
       break; 
     }
