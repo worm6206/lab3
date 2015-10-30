@@ -83,6 +83,46 @@ void InitVBO()
  // copy at drawing time
 } 
 
+glm::mat4 Mtranslate (float x, float y, float z){
+  glm::mat4 output = glm::mat4(); 
+  output[3][0]=x;
+  output[3][1]=y;
+  output[3][2]=z;
+  return output;
+}
+
+glm::mat4 Mscale(float x, float y, float z){
+  glm::mat4 output = glm::mat4(); 
+  output[0][0]=x;
+  output[1][1]=y;
+  output[2][2]=z;
+  return output;
+}
+
+glm::mat4 Mrotate(float angle, bool x, bool y, bool z){
+  glm::mat4 output = glm::mat4();
+  if(x){
+    output[1][1]=cos(angle*PI/180);
+    output[2][2]=cos(angle*PI/180);
+    output[2][1]=-sin(angle*PI/180);
+    output[1][2]=sin(angle*PI/180);
+    // std::cout<<output[1][1]<<","<<output[2][3]<<std::endl;
+    return output;
+  }else if (y){
+    output[0][0]=cos(angle*PI/180);
+    output[2][2]=cos(angle*PI/180);
+    output[0][2]=-sin(angle*PI/180);
+    output[2][0]=sin(angle*PI/180);
+    return output;
+  }else if (z){
+    output[0][0]=cos(angle*PI/180);
+    output[1][1]=cos(angle*PI/180);
+    output[1][0]=-sin(angle*PI/180);
+    output[0][1]=sin(angle*PI/180);
+    return output;
+  }
+}
+
 void draw_square(float color[3]){
 
   glColor3f(color[0],color[1],color[2]); 
@@ -162,7 +202,7 @@ void draw_cylinder (float baser, float topr, float h, int slices, float color[3]
 void draw_sphere(float r, int slices, int stacks, float color[3]){
   glPushMatrix();
   // glPushMatrix();
-
+  glMultMatrixf(&modelM[0][0]);
   for (int i = 0; i < stacks/2; ++i)
   {
     // std::cout<<r*sin((i+1)*(PI)/stacks)<<std::endl;
@@ -170,6 +210,7 @@ void draw_sphere(float r, int slices, int stacks, float color[3]){
     glTranslatef(0,0,r*sin((i+1)*(PI)/stacks)-r*sin((i)*(PI)/stacks));
   }
   glPopMatrix();
+  glMultMatrixf(&modelM[0][0]);
   glRotatef(180,1,0,0);
   for (int i = 0; i < stacks/2; ++i)
   {
@@ -344,7 +385,11 @@ void mykey(unsigned char key, int x, int y)
       exit(1);
       break;
     case 'w': 
-      modelM = glm::translate(modelM, glm::vec3(0.1f, 0.0f, 0.0f)); 
+      //modelM = modelM * Mtranslate(1,0,0);
+       // modelM = modelM * Mrotate(15,1,0,0);
+       // modelM = modelM * Mrotate(15,0,1,0);
+       // modelM = modelM * Mrotate(15,0,0,1);
+      // modelM = modelM * Mscale(1.1,1,1);
       display();
       break; 
     case '1': 
