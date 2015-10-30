@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <vector>
+#include <stack>
 #include <math.h>
 #include <glm/glm.hpp> 
 #include <glm/gtx/transform.hpp> 
@@ -30,6 +31,9 @@ float x_angle = 0.0;
 float y_angle = 0.0; 
 float scale_size = 1; 
 glm::mat4 modelM = glm::mat4(); 
+glm::mat4 transform[3] = {glm::mat4(),glm::mat4(),glm::mat4()};
+glm::mat4 nothing[3] = {glm::mat4(),glm::mat4(),glm::mat4()};
+std::stack<glm::mat4> stacks; 
 int xform_mode = 0; 
 float c1[4]={0.7,0,0,1};
 float c2[4]={0,0.7,0,1};
@@ -171,9 +175,10 @@ void draw_triangle(float A1,float A2,float A3,float B1,float B2,float B3,float C
   glPopMatrix();
 }
 
-void draw_cylinder (float baser, float topr, float h, int slices, float color[3],bool center) 
+void draw_cylinder (float baser, float topr, float h, int slices, float color[3],bool center,glm::mat4 M[3] ) 
 {
   glPushMatrix();
+  glMultMatrixf(&M[0][0][0]);
   if(center) glTranslatef(0,0,h/2);
 
   glTranslatef(0,0,h/2);
@@ -199,23 +204,23 @@ void draw_cylinder (float baser, float topr, float h, int slices, float color[3]
   glPopMatrix();
 }
 
-void draw_sphere(float r, int slices, int stacks, float color[3]){
+void draw_sphere(float r, int slices, int stacks, float color[3],glm::mat4 M[3]){
   glPushMatrix();
   // glPushMatrix();
-  glMultMatrixf(&modelM[0][0]);
+  glMultMatrixf(&M[0][0][0]);
   for (int i = 0; i < stacks/2; ++i)
   {
     // std::cout<<r*sin((i+1)*(PI)/stacks)<<std::endl;
-    draw_cylinder(r*cos(i*(PI)/stacks),r*cos((i+1)*(PI)/stacks),r*sin((i+1)*(PI)/stacks)-r*sin((i)*(PI)/stacks),slices,color,true);
+    draw_cylinder(r*cos(i*(PI)/stacks),r*cos((i+1)*(PI)/stacks),r*sin((i+1)*(PI)/stacks)-r*sin((i)*(PI)/stacks),slices,color,true,nothing);
     glTranslatef(0,0,r*sin((i+1)*(PI)/stacks)-r*sin((i)*(PI)/stacks));
   }
   glPopMatrix();
-  glMultMatrixf(&modelM[0][0]);
+  glMultMatrixf(&M[0][0][0]);
   glRotatef(180,1,0,0);
   for (int i = 0; i < stacks/2; ++i)
   {
     // std::cout<<r*sin((i+1)*(PI)/stacks)<<std::endl;
-    draw_cylinder(r*cos(i*(PI)/stacks),r*cos((i+1)*(PI)/stacks),r*sin((i+1)*(PI)/stacks)-r*sin((i)*(PI)/stacks),slices,color,true);
+    draw_cylinder(r*cos(i*(PI)/stacks),r*cos((i+1)*(PI)/stacks),r*sin((i+1)*(PI)/stacks)-r*sin((i)*(PI)/stacks),slices,color,true,nothing);
     glTranslatef(0,0,r*sin((i+1)*(PI)/stacks)-r*sin((i)*(PI)/stacks));
   }
   glPopMatrix();
@@ -261,33 +266,35 @@ void draw_floor(){
 void draw_man(){
   glPushMatrix();
     glTranslatef(0,0,4);
-    draw_sphere(1.5,12,12,c1);//head
+    stacks.push(transform[0]);
+    draw_sphere(1.5,12,12,c1,transform);//head
     glPushMatrix();
       glRotatef(90,1,0,0);
       glTranslatef(0,4,1.5);
       glRotatef(angle1,0,1,0);
-      draw_cylinder(0.2,0.1,1,12,c4,true);//nose
-      
+      draw_cylinder(0.2,0.1,1,12,c4,true,transform);//nose
+      transform[0] = stacks.top();
+      stacks.pop();
     glPopMatrix();
     glTranslatef(0,0,1);
-    draw_cylinder(2,1,4,12,c2,false);//body
+    draw_cylinder(2,1,4,12,c2,false,transform);//body
     glTranslatef(1,0,-3);
-    draw_cylinder(0.2,0.5,2,12,c3,false);//left foot
+    draw_cylinder(0.2,0.5,2,12,c3,false,transform);//left foot
     glTranslatef(-2,0,0);
-    draw_cylinder(0.2,0.5,2,12,c3,false);//right foot
+    draw_cylinder(0.2,0.5,2,12,c3,false,transform);//right foot
     glTranslatef(-0.5,0,4);
     glPushMatrix();
       glRotatef(-90,0,1,0);
-      draw_cylinder(0.5,0.2,1,12,c5,false);//left arm
+      draw_cylinder(0.5,0.2,1,12,c5,false,transform);//left arm
       glTranslatef(0,0,1);
-      draw_cylinder(0.2,0.2,1,12,c6,false);//left hand
+      draw_cylinder(0.2,0.2,1,12,c6,false,transform);//left hand
     glPopMatrix();
     glTranslatef(3,0,0);
     glPushMatrix();
       glRotatef(90,0,1,0);
-      draw_cylinder(0.5,0.2,1,12,c5,false);//right arm
+      draw_cylinder(0.5,0.2,1,12,c5,false,transform);//right arm
       glTranslatef(0,0,1);
-      draw_cylinder(0.2,0.2,1,12,c6,false);//right hand
+      draw_cylinder(0.2,0.2,1,12,c6,false,transform);//right hand
     glPopMatrix();
   glPopMatrix();
 }
@@ -386,7 +393,7 @@ void mykey(unsigned char key, int x, int y)
       break;
     case 'w': 
       //modelM = modelM * Mtranslate(1,0,0);
-       // modelM = modelM * Mrotate(15,1,0,0);
+        transform[0] = transform[0] * Mrotate(15,1,0,0);
        // modelM = modelM * Mrotate(15,0,1,0);
        // modelM = modelM * Mrotate(15,0,0,1);
       // modelM = modelM * Mscale(1.1,1,1);
